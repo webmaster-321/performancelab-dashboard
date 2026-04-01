@@ -3,426 +3,497 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Performance Lab — Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>Performance Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
-  :root {
-    --bg: #F7F6F3;
-    --surface: #FFFFFF;
-    --surface2: #F0EEE9;
-    --border: #E4E1D9;
-    --text: #1A1917;
-    --text2: #6B6860;
-    --text3: #A09D96;
-    --blue: #2563EB;
-    --blue-bg: #EFF4FF;
-    --green: #16A34A;
-    --green-bg: #F0FDF4;
-    --amber: #D97706;
-    --amber-bg: #FFFBEB;
-    --red: #DC2626;
-    --red-bg: #FEF2F2;
-    --teal: #0D9488;
-    --teal-bg: #F0FDFA;
-    --radius: 12px;
-    --radius-sm: 8px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+:root {
+  --purple: #6C47FF;
+  --purple-light: #EEE9FF;
+  --purple-mid: #9B7FFF;
+  --blue: #2563EB;
+  --blue-light: #EFF4FF;
+  --green: #16A34A;
+  --green-light: #F0FDF4;
+  --red: #DC2626;
+  --red-light: #FEF2F2;
+  --amber: #D97706;
+  --amber-light: #FFFBEB;
+  --bg: #F4F3F8;
+  --surface: #FFFFFF;
+  --border: #E8E6F0;
+  --text: #0F0E1A;
+  --text2: #6B6880;
+  --text3: #A09DB8;
+  --sidebar-w: 56px;
+  --sidebar-expanded: 200px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden;}
 
-  /* HEADER */
-  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 2rem; position: sticky; top: 0; z-index: 100; }
-  .header-inner { max-width: 1280px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 1rem; flex-wrap: wrap; }
-  .logo { display: flex; align-items: center; gap: 10px; }
-  .logo-dot { width: 28px; height: 28px; background: var(--blue); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
-  .logo-dot svg { width: 16px; height: 16px; fill: white; }
-  .logo-name { font-size: 15px; font-weight: 500; letter-spacing: -0.01em; }
-  .logo-sub { font-size: 12px; color: var(--text3); font-weight: 300; }
-  .header-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-  .status-pill { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 5px 10px; border-radius: 20px; background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
-  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); }
-  .status-pill.ok .status-dot { background: var(--green); }
-  .status-pill.err .status-dot { background: var(--red); }
+/* SIDEBAR */
+.sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:16px 0;transition:width 0.25s cubic-bezier(.4,0,.2,1);overflow:hidden;flex-shrink:0;z-index:50;}
+.sidebar:hover{width:var(--sidebar-expanded);}
+.sb-logo{display:flex;align-items:center;gap:12px;padding:0 14px;margin-bottom:24px;white-space:nowrap;}
+.sb-logo-icon{width:28px;height:28px;background:var(--purple);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sb-logo-icon svg{width:14px;height:14px;fill:white;}
+.sb-logo-text{font-size:13px;font-weight:600;color:var(--text);opacity:0;transition:opacity 0.15s;}
+.sidebar:hover .sb-logo-text{opacity:1;}
+.sb-logo-sub{font-size:10px;color:var(--text3);}
 
-  /* CONTROLS BAR */
-  .controls-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 2rem; }
-  .controls-inner { max-width: 1280px; margin: 0 auto; display: flex; align-items: center; gap: 12px; height: 52px; flex-wrap: wrap; }
-  .range-group { display: flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
-  .btn-range { padding: 5px 14px; font-size: 12px; font-family: 'DM Sans', sans-serif; background: transparent; border: none; cursor: pointer; color: var(--text2); transition: all 0.15s; font-weight: 400; }
-  .btn-range:not(:last-child) { border-right: 1px solid var(--border); }
-  .btn-range.active { background: var(--text); color: white; font-weight: 500; }
-  .date-sep { font-size: 12px; color: var(--text3); }
-  .date-input { font-size: 12px; font-family: 'DM Sans', sans-serif; padding: 5px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); cursor: pointer; }
-  .date-range-label { font-size: 12px; color: var(--text2); margin-left: auto; }
-  .btn-refresh { padding: 5px 14px; font-size: 12px; font-family: 'DM Sans', sans-serif; background: transparent; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; color: var(--text2); display: flex; align-items: center; gap: 6px; transition: all 0.15s; }
-  .btn-refresh:hover { background: var(--surface2); }
+.nav-section{padding:0 8px;margin-bottom:4px;}
+.nav-label-group{font-size:9px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;padding:0 8px;margin:12px 0 4px;white-space:nowrap;opacity:0;transition:opacity 0.15s;}
+.sidebar:hover .nav-label-group{opacity:1;}
 
-  /* MAIN */
-  .main { max-width: 1280px; margin: 0 auto; padding: 2rem; }
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 8px;border-radius:8px;cursor:pointer;white-space:nowrap;transition:background 0.15s;margin-bottom:2px;}
+.nav-item:hover{background:var(--purple-light);}
+.nav-item.active{background:var(--purple);} 
+.nav-item.active .nav-icon svg{fill:white;}
+.nav-item.active .nav-text{color:white;}
+.nav-icon{width:28px;height:28px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.nav-icon svg{width:16px;height:16px;fill:var(--text2);transition:fill 0.15s;}
+.nav-item:hover:not(.active) .nav-icon svg{fill:var(--purple);}
+.nav-text{font-size:13px;color:var(--text2);font-weight:400;opacity:0;transition:opacity 0.15s;}
+.sidebar:hover .nav-text{opacity:1;}
+.nav-divider{height:1px;background:var(--border);margin:8px 10px;}
 
-  /* SECTION */
-  .section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; }
-  .section-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; cursor: pointer; user-select: none; transition: background 0.15s; }
-  .section-header:hover { background: var(--surface2); }
-  .section-header-left { display: flex; align-items: center; gap: 10px; }
-  .section-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; }
-  .section-title { font-size: 14px; font-weight: 500; }
-  .section-summary { font-size: 12px; color: var(--text2); margin-left: 4px; }
-  .section-chevron { color: var(--text3); font-size: 12px; transition: transform 0.2s; }
-  .section-chevron.open { transform: rotate(180deg); }
-  .section-body { padding: 0 1.25rem 1.25rem; border-top: 1px solid var(--border); }
-  .section-body.collapsed { display: none; }
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
 
-  /* CARDS GRID */
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; padding-top: 1.25rem; }
-  .card { background: var(--surface2); border-radius: var(--radius-sm); padding: 1rem; }
-  .card-label { font-size: 11px; color: var(--text2); margin-bottom: 8px; font-weight: 400; }
-  .card-value { font-size: 24px; font-weight: 500; color: var(--text); letter-spacing: -0.02em; font-family: 'DM Mono', monospace; }
-  .card-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
-  .card.accent-blue { background: var(--blue-bg); }
-  .card.accent-blue .card-value { color: var(--blue); }
-  .card.accent-green { background: var(--green-bg); }
-  .card.accent-green .card-value { color: var(--green); }
-  .card.accent-amber { background: var(--amber-bg); }
-  .card.accent-amber .card-value { color: var(--amber); }
-  .card.accent-teal { background: var(--teal-bg); }
-  .card.accent-teal .card-value { color: var(--teal); }
-  .card.accent-red { background: var(--red-bg); }
-  .card.accent-red .card-value { color: var(--red); }
+/* TOPBAR */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.topbar-left{min-width:0;}
+.topbar-title{font-size:16px;font-weight:600;color:var(--text);}
+.topbar-sub{font-size:11px;color:var(--text3);margin-top:1px;}
+.topbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.range-group{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.rg-btn{padding:5px 12px;font-size:11px;font-family:'Inter',sans-serif;background:transparent;border:none;cursor:pointer;color:var(--text2);transition:all 0.15s;}
+.rg-btn:not(:last-child){border-right:1px solid var(--border);}
+.rg-btn.active{background:var(--purple);color:white;font-weight:500;}
+.date-sep{font-size:11px;color:var(--text3);}
+.date-inp{font-size:11px;font-family:'Inter',sans-serif;padding:5px 8px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);cursor:pointer;outline:none;}
+.status-badge{display:flex;align-items:center;gap:5px;font-size:11px;padding:5px 10px;border-radius:20px;background:var(--bg);color:var(--text2);}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);}
+.status-badge.ok{background:var(--green-light);color:var(--green);}
+.status-badge.ok .status-dot{background:var(--green);}
+.status-badge.err{background:var(--red-light);color:var(--red);}
+.status-badge.err .status-dot{background:var(--red);}
+.btn-refresh{padding:5px 12px;font-size:11px;font-family:'Inter',sans-serif;background:transparent;border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:5px;transition:background 0.15s;}
+.btn-refresh:hover{background:var(--bg);}
 
-  /* CHARTS */
-  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-top: 1.25rem; }
-  .chart-card { background: var(--surface2); border-radius: var(--radius-sm); padding: 1rem; }
-  .chart-card-title { font-size: 12px; color: var(--text2); margin-bottom: 12px; font-weight: 400; }
-  .chart-wrap { position: relative; width: 100%; height: 180px; }
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:20px 24px;}
+.section-view{display:none;}
+.section-view.active{display:block;}
 
-  /* SUMMARY ROW */
-  .summary-row { display: flex; gap: 2rem; padding: 1.25rem 0 0; flex-wrap: wrap; }
-  .summary-item { display: flex; flex-direction: column; gap: 2px; }
-  .summary-label { font-size: 11px; color: var(--text3); }
-  .summary-val { font-size: 13px; font-weight: 500; font-family: 'DM Mono', monospace; }
+.section-header{margin-bottom:16px;}
+.section-header h2{font-size:13px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;}
 
-  /* ERROR */
-  .error-box { background: var(--red-bg); border: 1px solid #FCA5A5; border-radius: var(--radius-sm); padding: 1rem 1.25rem; color: var(--red); font-size: 13px; line-height: 1.8; margin: 1rem 0; }
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px;}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;position:relative;overflow:hidden;}
+.kpi-card.green{background:var(--green-light);border-color:#BBF7D0;}
+.kpi-card.blue{background:var(--blue-light);border-color:#BFDBFE;}
+.kpi-card.purple{background:var(--purple-light);border-color:#D4C5FF;}
+.kpi-card.red{background:var(--red-light);border-color:#FECACA;}
+.kpi-card.amber{background:var(--amber-light);border-color:#FDE68A;}
+.kpi-label{font-size:11px;color:var(--text3);margin-bottom:8px;font-weight:400;}
+.kpi-value{font-size:26px;font-weight:600;color:var(--text);letter-spacing:-0.03em;line-height:1;}
+.kpi-card.green .kpi-value{color:var(--green);}
+.kpi-card.blue .kpi-value{color:var(--blue);}
+.kpi-card.purple .kpi-value{color:var(--purple);}
+.kpi-card.red .kpi-value{color:var(--red);}
+.kpi-card.amber .kpi-value{color:var(--amber);}
+.kpi-delta{font-size:10px;margin-top:6px;color:var(--text3);}
+.kpi-delta.up{color:var(--green);}
+.kpi-delta.down{color:var(--red);}
+.spark{height:32px;display:flex;align-items:flex-end;gap:2px;margin-top:10px;}
+.sp-bar{flex:1;border-radius:2px 2px 0 0;min-height:3px;}
 
-  /* LOADING */
-  .loading { text-align: center; padding: 4rem 2rem; color: var(--text3); font-size: 14px; }
-  .spinner { width: 24px; height: 24px; border: 2px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+/* CHARTS */
+.charts-grid{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:16px;}
+.charts-grid.full{grid-template-columns:1fr;}
+.charts-grid.two{grid-template-columns:1fr 1fr;}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;}
+.chart-card-title{font-size:12px;color:var(--text2);margin-bottom:12px;font-weight:500;}
+.chart-wrap{position:relative;width:100%;}
 
-  @media(max-width: 768px) {
-    .main { padding: 1rem; }
-    .charts-row { grid-template-columns: 1fr; }
-    .header { padding: 0 1rem; }
-    .controls-bar { padding: 0 1rem; }
-  }
+/* ERROR */
+.error-box{background:var(--red-light);border:1px solid #FECACA;border-radius:12px;padding:16px;color:var(--red);font-size:13px;line-height:1.7;margin:16px 0;}
+
+/* LOADING */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;gap:12px;color:var(--text3);}
+.spin{width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--purple);border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* MOBILE NAV */
+.mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:8px 0 12px;z-index:100;}
+.mobile-nav-inner{display:flex;justify-content:space-around;}
+.mn-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 8px;}
+.mn-item svg{width:20px;height:20px;fill:var(--text3);}
+.mn-item.active svg{fill:var(--purple);}
+.mn-label{font-size:9px;color:var(--text3);}
+.mn-item.active .mn-label{color:var(--purple);}
+
+@media(max-width:768px){
+  .sidebar{display:none;}
+  .mobile-nav{display:block;}
+  .content{padding:16px;padding-bottom:80px;}
+  .charts-grid{grid-template-columns:1fr;}
+  .topbar{padding:10px 16px;}
+  .topbar-right{gap:6px;}
+}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div class="header-inner">
-    <div class="logo">
-      <div class="logo-dot">
-        <svg viewBox="0 0 16 16"><path d="M8 2L14 5V11L8 14L2 11V5L8 2Z"/></svg>
-      </div>
-      <div>
-        <div class="logo-name">Performance Lab</div>
-        <div class="logo-sub">Dashboard de métricas</div>
-      </div>
+<nav class="sidebar" id="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-icon"><svg viewBox="0 0 16 16"><path d="M8 1L15 4.5V11.5L8 15L1 11.5V4.5L8 1Z"/></svg></div>
+    <div><div class="sb-logo-text">Performance Lab</div><div class="sb-logo-sub" style="opacity:0;transition:opacity 0.15s" id="sb-sub">Dashboard</div></div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label-group">Métricas</div>
+    <div class="nav-item active" data-section="subs" onclick="navigate('subs',this)">
+      <div class="nav-icon"><svg viewBox="0 0 16 16"><path d="M8 8a3 3 0 100-6 3 3 0 000 6zM2 14s-1 0-1-1 1-4 7-4 7 3 7 4-1 1-1 1H2z"/></svg></div>
+      <span class="nav-text">Suscripciones</span>
     </div>
-    <div class="header-right">
-      <div class="status-pill" id="status-pill">
-        <div class="status-dot"></div>
-        <span id="status-text">Conectando...</span>
-      </div>
+    <div class="nav-item" data-section="mrr" onclick="navigate('mrr',this)">
+      <div class="nav-icon"><svg viewBox="0 0 16 16"><path d="M1 11l4-4 3 3 3-4 4-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <span class="nav-text">MRR</span>
     </div>
+    <div class="nav-item" data-section="ret" onclick="navigate('ret',this)">
+      <div class="nav-icon"><svg viewBox="0 0 16 16"><path d="M8 2a6 6 0 100 12A6 6 0 008 2zM8 5v3l2 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      <span class="nav-text">Retención</span>
+    </div>
+    <div class="nav-item" data-section="cro" onclick="navigate('cro',this)">
+      <div class="nav-icon"><svg viewBox="0 0 16 16"><path d="M2 14V9m3 5V6m3 8V8m3 6V4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      <span class="nav-text">Curso CRO</span>
+    </div>
+    <div class="nav-item" data-section="ing" onclick="navigate('ing',this)">
+      <div class="nav-icon"><svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M2 7h12M6 3v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      <span class="nav-text">Ingresos totales</span>
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-item" data-section="unit" onclick="navigate('unit',this)">
+      <div class="nav-icon"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v3M8 10.5v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      <span class="nav-text">Unit Economics</span>
+    </div>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title" id="topbar-title">Suscripciones</div>
+      <div class="topbar-sub" id="topbar-sub">Cargando...</div>
+    </div>
+    <div class="topbar-right">
+      <div class="range-group">
+        <button class="rg-btn" onclick="setRange(7,this)">7D</button>
+        <button class="rg-btn" onclick="setRange(14,this)">14D</button>
+        <button class="rg-btn" onclick="setRange(30,this)">30D</button>
+        <button class="rg-btn active" onclick="setRange('all',this)">Todo</button>
+      </div>
+      <input type="date" class="date-inp" id="date-from">
+      <span class="date-sep">→</span>
+      <input type="date" class="date-inp" id="date-to">
+      <button class="btn-refresh" onclick="loadData()">↻</button>
+      <div class="status-badge" id="status-badge"><div class="status-dot"></div><span id="status-text">Conectando</span></div>
+    </div>
+  </div>
+
+  <div class="content" id="content">
+    <div class="loading"><div class="spin"></div>Cargando datos...</div>
   </div>
 </div>
 
-<div class="controls-bar">
-  <div class="controls-inner">
-    <div class="range-group">
-      <button class="btn-range" data-range="7">7D</button>
-      <button class="btn-range" data-range="14">14D</button>
-      <button class="btn-range" data-range="30">30D</button>
-      <button class="btn-range active" data-range="all">Todo</button>
+<nav class="mobile-nav">
+  <div class="mobile-nav-inner">
+    <div class="mn-item active" onclick="navigate('subs',this,true)">
+      <svg viewBox="0 0 16 16"><path d="M8 8a3 3 0 100-6 3 3 0 000 6zM2 14s-1 0-1-1 1-4 7-4 7 3 7 4-1 1-1 1H2z"/></svg>
+      <span class="mn-label">Subs</span>
     </div>
-    <input type="date" class="date-input" id="date-from">
-    <span class="date-sep">→</span>
-    <input type="date" class="date-input" id="date-to">
-    <button class="btn-refresh" onclick="loadData()">↻ Actualizar</button>
-    <span class="date-range-label" id="range-label"></span>
+    <div class="mn-item" onclick="navigate('mrr',this,true)">
+      <svg viewBox="0 0 16 16"><path d="M1 11l4-4 3 3 3-4 4-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span class="mn-label">MRR</span>
+    </div>
+    <div class="mn-item" onclick="navigate('ret',this,true)">
+      <svg viewBox="0 0 16 16"><path d="M8 2a6 6 0 100 12A6 6 0 008 2zM8 5v3l2 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span class="mn-label">Ret</span>
+    </div>
+    <div class="mn-item" onclick="navigate('cro',this,true)">
+      <svg viewBox="0 0 16 16"><path d="M2 14V9m3 5V6m3 8V8m3 6V4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span class="mn-label">CRO</span>
+    </div>
+    <div class="mn-item" onclick="navigate('unit',this,true)">
+      <svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+      <span class="mn-label">Unit</span>
+    </div>
   </div>
-</div>
-
-<div class="main" id="main-content">
-  <div class="loading">
-    <div class="spinner"></div>
-    Cargando datos desde Google Sheets...
-  </div>
-</div>
+</nav>
 
 <script>
-const API_URL = 'https://script.google.com/a/macros/laweb.pe/s/AKfycbxREPcUQgTokMJtqM63BvdQzY__h4FYnS4oXA_vI9CEdQetlyXtgG3JPqhPpMQ1p2cY/exec';
-let allRows = [];
-let charts = {};
+const API = 'https://script.google.com/a/macros/laweb.pe/s/AKfycbxREPcUQgTokMJtqM63BvdQzY__h4FYnS4oXA_vI9CEdQetlyXtgG3JPqhPpMQ1p2cY/exec';
+let allRows=[], currentSection='subs', activeCharts={};
 
-function fmt$(n){ return '$'+(parseFloat(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-function fmtPct(n){ return ((parseFloat(n)||0)*100).toFixed(2)+'%'; }
-function fmtN(n){ return Math.round(n||0).toLocaleString('en-US'); }
+const SECTIONS={
+  subs:{label:'Suscripciones'},
+  mrr:{label:'MRR'},
+  ret:{label:'Retención'},
+  cro:{label:'Curso CRO'},
+  ing:{label:'Ingresos totales'},
+  unit:{label:'Unit Economics'}
+};
 
+function fmt$(n){return'$'+(parseFloat(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtPct(n){return((parseFloat(n)||0)*100).toFixed(2)+'%';}
+function fmtN(n){return Math.round(n||0).toLocaleString('en-US');}
+function parseNum(s){return parseFloat(String(s||0).replace(/[$,\s]/g,''))||0;}
 function parseDate(s){
-  if(!s) return null;
-  const str = String(s).trim();
-  if(!str) return null;
-  const dmy = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if(dmy) return new Date(+dmy[3], +dmy[2]-1, +dmy[1]);
-  const iso = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if(iso) return new Date(+iso[1], +iso[2]-1, +iso[3]);
-  const d = new Date(str);
-  return isNaN(d.getTime())?null:d;
+  if(!s)return null;
+  const str=String(s).trim();
+  const dmy=str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(dmy)return new Date(+dmy[3],+dmy[2]-1,+dmy[1]);
+  const iso=str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(iso)return new Date(+iso[1],+iso[2]-1,+iso[3]);
+  const d=new Date(str);return isNaN(d.getTime())?null:d;
 }
-function parseNum(s){ return parseFloat(String(s||0).replace(/[$, ]/g,''))||0; }
+
+function setStatus(t,cls){
+  const b=document.getElementById('status-badge');
+  const s=document.getElementById('status-text');
+  b.className='status-badge'+(cls?' '+cls:'');
+  s.textContent=t;
+}
 
 async function loadData(){
-  setStatus('Cargando...','');
-  try {
-    const res = await fetch(API_URL);
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const json = await res.json();
-    allRows = json.map(row => ({
-      fecha: parseDate(row['Fecha']),
-      monto: parseNum(row['Monto']),
-      evento: String(row['Evento']||'').trim(),
-      tipoPlan: String(row['Tipo de Plan']||'').trim(),
-      mrrNeto: parseNum(row['MRR neto']),
-      expMrr: parseNum(row['Expansión MRR neta']),
-      motivoCancelacion: String(row['Motivo Cancelación']||'').trim(),
+  setStatus('Conectando','');
+  try{
+    const res=await fetch(API);
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const json=await res.json();
+    allRows=json.map(r=>({
+      fecha:parseDate(r['Fecha']),
+      monto:parseNum(r['Monto']),
+      evento:String(r['Evento']||'').trim(),
+      tipoPlan:String(r['Tipo de Plan']||'').trim(),
+      mrrNeto:parseNum(r['MRR neto']),
+      expMrr:parseNum(r['Expansión MRR neta']),
+      motivoCancelacion:String(r['Motivo Cancelación']||'').trim(),
     })).filter(r=>r.fecha&&!isNaN(r.fecha.getTime()));
-
-    if(!allRows.length) throw new Error('Sin filas válidas');
+    if(!allRows.length)throw new Error('Sin filas válidas');
     setStatus(allRows.length+' registros','ok');
-    initDatePickers();
-    renderAll(allRows);
-  } catch(e){
-    setStatus('Error de conexión','err');
-    document.getElementById('main-content').innerHTML = `
-      <div class="error-box">
-        <strong>No se pudo conectar con Google Sheets.</strong><br><br>
-        Verificá que el Apps Script esté publicado correctamente:<br>
-        — Implementar → Gestionar implementaciones → El acceso es "Cualquier persona"<br><br>
-        Error: ${e.message}
-      </div>`;
+    initDates();
+    renderSection(filterRows());
+  }catch(e){
+    setStatus('Error','err');
+    document.getElementById('content').innerHTML=`<div class="error-box"><strong>No se pudo conectar.</strong><br>Verificá que el Apps Script tenga acceso "Cualquier persona".<br><br>Error: ${e.message}</div>`;
   }
 }
 
-function setStatus(text, cls){
-  const pill = document.getElementById('status-pill');
-  const span = document.getElementById('status-text');
-  pill.className = 'status-pill '+(cls||'');
-  span.textContent = text;
+function initDates(){
+  const times=allRows.map(r=>r.fecha.getTime());
+  const minD=new Date(Math.min(...times));
+  const maxD=new Date(Math.max(...times));
+  document.getElementById('date-from').value=minD.toISOString().split('T')[0];
+  document.getElementById('date-to').value=maxD.toISOString().split('T')[0];
+  document.getElementById('date-from').addEventListener('change',()=>renderSection(filterRows()));
+  document.getElementById('date-to').addEventListener('change',()=>renderSection(filterRows()));
+  const label=minD.toLocaleDateString('es-AR',{day:'numeric',month:'short',year:'numeric'})+' → '+maxD.toLocaleDateString('es-AR',{day:'numeric',month:'short',year:'numeric'});
+  document.getElementById('topbar-sub').textContent=label;
 }
 
-function initDatePickers(){
-  const times = allRows.map(r=>r.fecha.getTime());
-  const minD = new Date(Math.min(...times));
-  const maxD = new Date(Math.max(...times));
-  const df = document.getElementById('date-from');
-  const dt = document.getElementById('date-to');
-  df.value = minD.toISOString().split('T')[0];
-  dt.value = maxD.toISOString().split('T')[0];
-  df.addEventListener('change', applyFilter);
-  dt.addEventListener('change', applyFilter);
+function filterRows(){
+  const f=new Date(document.getElementById('date-from').value+'T00:00:00');
+  const t=new Date(document.getElementById('date-to').value+'T23:59:59');
+  return allRows.filter(r=>r.fecha>=f&&r.fecha<=t);
 }
 
-function applyFilter(){
-  const f = new Date(document.getElementById('date-from').value+'T00:00:00');
-  const t = new Date(document.getElementById('date-to').value+'T23:59:59');
-  const filtered = allRows.filter(r=>r.fecha>=f&&r.fecha<=t);
-  renderAll(filtered);
-  const label = f.toLocaleDateString('es-AR',{day:'numeric',month:'short'})+' → '+t.toLocaleDateString('es-AR',{day:'numeric',month:'short',year:'numeric'});
-  document.getElementById('range-label').textContent = label;
+function setRange(days,btn){
+  document.querySelectorAll('.rg-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const times=allRows.map(r=>r.fecha.getTime());
+  const maxD=new Date(Math.max(...times));
+  document.getElementById('date-to').value=maxD.toISOString().split('T')[0];
+  if(days==='all'){document.getElementById('date-from').value=new Date(Math.min(...times)).toISOString().split('T')[0];}
+  else{const f=new Date(maxD);f.setDate(f.getDate()-days+1);document.getElementById('date-from').value=f.toISOString().split('T')[0];}
+  renderSection(filterRows());
 }
 
-function setRange(days){
-  document.querySelectorAll('.btn-range').forEach(b=>b.classList.remove('active'));
-  event.target.classList.add('active');
-  const times = allRows.map(r=>r.fecha.getTime());
-  const maxD = new Date(Math.max(...times));
-  const dt = document.getElementById('date-to');
-  const df = document.getElementById('date-from');
-  dt.value = maxD.toISOString().split('T')[0];
-  if(days==='all'){
-    df.value = new Date(Math.min(...times)).toISOString().split('T')[0];
-  } else {
-    const f = new Date(maxD); f.setDate(f.getDate()-parseInt(days)+1);
-    df.value = f.toISOString().split('T')[0];
-  }
-  applyFilter();
+function navigate(sec,el,isMobile){
+  currentSection=sec;
+  document.getElementById('topbar-title').textContent=SECTIONS[sec].label;
+  if(!isMobile){document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));el.classList.add('active');}
+  else{document.querySelectorAll('.mn-item').forEach(i=>i.classList.remove('active'));el.classList.add('active');}
+  if(allRows.length)renderSection(filterRows());
 }
 
 function calc(rows){
-  const nuevos = rows.filter(r=>r.evento==='Nuevo');
-  const cancelaciones = rows.filter(r=>r.evento==='Cancelación'&&r.motivoCancelacion==='Churn');
-  const reembolsos = rows.filter(r=>r.evento==='Cancelación'&&r.motivoCancelacion==='Reembolso');
-  const upsells = rows.filter(r=>r.evento==='Upsell');
-  const otos = rows.filter(r=>r.evento==='OTO');
-
-  const newMrr = nuevos.reduce((s,r)=>s+r.mrrNeto,0)-reembolsos.reduce((s,r)=>s+r.mrrNeto,0);
-  const expMrr = upsells.reduce((s,r)=>s+r.expMrr,0);
-  const churnMrr = cancelaciones.reduce((s,r)=>s+r.mrrNeto,0);
-  const netMrr = newMrr+expMrr-churnMrr;
-  const activas = Math.max(0,nuevos.length-reembolsos.length-cancelaciones.length);
-  const churnRate = nuevos.length>0?cancelaciones.length/nuevos.length:0;
-  const refundRate = nuevos.length>0?reembolsos.length/nuevos.length:0;
-  const upgradeRate = nuevos.length>0?upsells.length/nuevos.length:0;
-  const nrr = (nuevos.length*29)>0?netMrr/(nuevos.length*29):0;
-  const otoCount = otos.length;
-  const otoRev = otos.reduce((s,r)=>s+r.monto,0);
-  const aovOto = otoCount>0?otoRev/otoCount:0;
-  const otoRate = nuevos.length>0?otoCount/nuevos.length:0;
-  const revSub = newMrr+expMrr;
-  const revTotal = revSub+otoRev;
-  const arr = newMrr*12;
-  const arpuTotal = activas>0?revTotal/activas:0;
-  const mensualRows = nuevos.filter(r=>r.tipoPlan==='Mensual');
-  const anualRows = upsells.filter(r=>r.tipoPlan==='Anual');
-  const arpuM = mensualRows.length>0?mensualRows.reduce((s,r)=>s+r.mrrNeto,0)/mensualRows.length:0;
-  const arpuA = anualRows.length>0?anualRows.reduce((s,r)=>s+r.mrrNeto,0)/anualRows.length:0;
-  const ltv = churnRate>0?29/churnRate:580;
-  const cac = 22.30;
-  return { nuevos,cancelaciones,reembolsos,upsells,otos,newMrr,expMrr,churnMrr,netMrr,activas,churnRate,refundRate,upgradeRate,nrr,otoCount,otoRev,aovOto,otoRate,revSub,revTotal,arr,arpuTotal,arpuM,arpuA,ltv,cac,ltvCac:cac>0?ltv/cac:0,payback:arpuTotal>0?cac/arpuTotal:0,rows };
+  const nuevos=rows.filter(r=>r.evento==='Nuevo');
+  const churnRows=rows.filter(r=>r.evento==='Cancelación'&&r.motivoCancelacion==='Churn');
+  const reembolsos=rows.filter(r=>r.evento==='Cancelación'&&r.motivoCancelacion==='Reembolso');
+  const upsells=rows.filter(r=>r.evento==='Upsell');
+  const otos=rows.filter(r=>r.evento==='OTO');
+  const newMrr=nuevos.reduce((s,r)=>s+r.mrrNeto,0)-reembolsos.reduce((s,r)=>s+r.mrrNeto,0);
+  const expMrr=upsells.reduce((s,r)=>s+r.expMrr,0);
+  const churnMrr=churnRows.reduce((s,r)=>s+r.mrrNeto,0);
+  const netMrr=newMrr+expMrr-churnMrr;
+  const activas=Math.max(0,nuevos.length-reembolsos.length-churnRows.length);
+  const churnRate=nuevos.length>0?churnRows.length/nuevos.length:0;
+  const refundRate=nuevos.length>0?reembolsos.length/nuevos.length:0;
+  const upgradeRate=nuevos.length>0?upsells.length/nuevos.length:0;
+  const nrr=(nuevos.length*29)>0?netMrr/(nuevos.length*29):0;
+  const otoCount=otos.length;
+  const otoRev=otos.reduce((s,r)=>s+r.monto,0);
+  const aovOto=otoCount>0?otoRev/otoCount:0;
+  const otoRate=nuevos.length>0?otoCount/nuevos.length:0;
+  const revSub=newMrr+expMrr;
+  const revTotal=revSub+otoRev;
+  const arr=newMrr*12;
+  const arpuTotal=activas>0?revTotal/activas:0;
+  const mensual=nuevos.filter(r=>r.tipoPlan==='Mensual');
+  const anual=upsells.filter(r=>r.tipoPlan==='Anual');
+  const arpuM=mensual.length>0?mensual.reduce((s,r)=>s+r.mrrNeto,0)/mensual.length:0;
+  const arpuA=anual.length>0?anual.reduce((s,r)=>s+r.mrrNeto,0)/anual.length:0;
+  const ltv=churnRate>0?29/churnRate:580;
+  const cac=22.30;
+  return{nuevos,churnRows,reembolsos,upsells,otos,newMrr,expMrr,churnMrr,netMrr,activas,churnRate,refundRate,upgradeRate,nrr,otoCount,otoRev,aovOto,otoRate,revSub,revTotal,arr,arpuTotal,arpuM,arpuA,ltv,cac,ltvCac:cac>0?ltv/cac:0,payback:arpuTotal>0?cac/arpuTotal:0};
 }
 
-function renderAll(rows){
-  const d = calc(rows);
-  const html = `
-    ${section('subs','#EFF4FF','📋','Suscripciones',
-      `<span class="section-summary">${fmtN(d.activas)} activas · ${fmtN(d.nuevos.length)} nuevas</span>`,
-      `<div class="cards">
-        <div class="card accent-blue"><div class="card-label">Suscripciones activas</div><div class="card-value">${fmtN(d.activas)}</div></div>
-        <div class="card"><div class="card-label">Nuevas suscripciones</div><div class="card-value">${fmtN(d.nuevos.length)}</div></div>
-        <div class="card"><div class="card-label">Cancelaciones (churn)</div><div class="card-value">${fmtN(d.cancelaciones.length)}</div></div>
-        <div class="card"><div class="card-label">Reembolsos</div><div class="card-value">${fmtN(d.reembolsos.length)}</div></div>
-        <div class="card"><div class="card-label">Upsells anuales</div><div class="card-value">${fmtN(d.upsells.length)}</div></div>
-      </div>
-      ${chartSection('chart-subs-day','Nuevas suscripciones por día')}`, true)}
-
-    ${section('mrr','#F0FDF4','💰','MRR',
-      `<span class="section-summary">New ${fmt$(d.newMrr)} · Net ${fmt$(d.netMrr)}</span>`,
-      `<div class="cards">
-        <div class="card accent-green"><div class="card-label">New MRR</div><div class="card-value">${fmt$(d.newMrr)}</div></div>
-        <div class="card"><div class="card-label">Expansion MRR</div><div class="card-value">${fmt$(d.expMrr)}</div></div>
-        <div class="card accent-red"><div class="card-label">Churned MRR</div><div class="card-value">${fmt$(d.churnMrr)}</div></div>
-        <div class="card accent-blue"><div class="card-label">Net New MRR</div><div class="card-value">${fmt$(d.netMrr)}</div></div>
-        <div class="card"><div class="card-label">ARR</div><div class="card-value">${fmt$(d.arr)}</div></div>
-      </div>
-      ${chartSection('chart-mrr-cum','Ingreso acumulado')}`, true)}
-
-    ${section('ret','#FFFBEB','🔄','Retención',
-      `<span class="section-summary">Churn ${fmtPct(d.churnRate)} · NRR ${fmtPct(d.nrr)}</span>`,
-      `<div class="cards">
-        <div class="card ${d.churnRate>0.1?'accent-red':'accent-green'}"><div class="card-label">Churn Rate</div><div class="card-value">${fmtPct(d.churnRate)}</div></div>
-        <div class="card"><div class="card-label">Reembolso Rate</div><div class="card-value">${fmtPct(d.refundRate)}</div></div>
-        <div class="card accent-teal"><div class="card-label">Annual Upgrade Rate</div><div class="card-value">${fmtPct(d.upgradeRate)}</div></div>
-        <div class="card ${d.nrr>=1?'accent-green':'accent-amber'}"><div class="card-label">Net Revenue Retention</div><div class="card-value">${fmtPct(d.nrr)}</div></div>
-      </div>`, false)}
-
-    ${section('oto','#F0FDFA','🎯','Curso CRO',
-      `<span class="section-summary">${fmtN(d.otoCount)} compras · ${fmtPct(d.otoRate)} attach rate</span>`,
-      `<div class="cards">
-        <div class="card accent-teal"><div class="card-label">Compras OTO</div><div class="card-value">${fmtN(d.otoCount)}</div></div>
-        <div class="card accent-teal"><div class="card-label">OTO Attach Rate</div><div class="card-value">${fmtPct(d.otoRate)}</div></div>
-        <div class="card"><div class="card-label">AOV OTO</div><div class="card-value">${fmt$(d.aovOto)}</div></div>
-        <div class="card accent-green"><div class="card-label">Ingreso OTO</div><div class="card-value">${fmt$(d.otoRev)}</div></div>
-      </div>
-      ${chartSection('chart-oto-rate','OTO Attach Rate por día')}`, false)}
-
-    ${section('unit','#EFF4FF','📊','Unit Economics',
-      `<span class="section-summary">LTV ${fmt$(d.ltv)} · LTV:CAC ${d.ltvCac.toFixed(1)}x</span>`,
-      `<div class="cards">
-        <div class="card"><div class="card-label">ARPU Total</div><div class="card-value">${fmt$(d.arpuTotal)}</div></div>
-        <div class="card"><div class="card-label">ARPU Mensual</div><div class="card-value">${fmt$(d.arpuM)}</div></div>
-        <div class="card"><div class="card-label">ARPU Anual</div><div class="card-value">${fmt$(d.arpuA)}</div></div>
-        <div class="card accent-blue"><div class="card-label">LTV</div><div class="card-value">${fmt$(d.ltv)}</div><div class="card-sub">${d.churnRate===0?'estimado al 5% churn':''}</div></div>
-        <div class="card"><div class="card-label">CAC</div><div class="card-value">${fmt$(d.cac)}</div><div class="card-sub">ingresado manualmente</div></div>
-        <div class="card accent-green"><div class="card-label">LTV:CAC</div><div class="card-value">${d.ltvCac.toFixed(1)}x</div></div>
-        <div class="card accent-amber"><div class="card-label">Payback Period</div><div class="card-value">${d.payback.toFixed(1)}</div><div class="card-sub">meses</div></div>
-      </div>`, false)}
-  `;
-  document.getElementById('main-content').innerHTML = html;
-  setupSections();
-  renderCharts(rows, d);
-}
-
-function section(id, iconBg, icon, title, summary, body, open){
-  return `<div class="section" id="sec-${id}">
-    <div class="section-header" onclick="toggleSection('${id}')">
-      <div class="section-header-left">
-        <div class="section-icon" style="background:${iconBg}">${icon}</div>
-        <span class="section-title">${title}</span>
-        ${summary}
-      </div>
-      <span class="section-chevron ${open?'open':''}" id="chev-${id}">▼</span>
-    </div>
-    <div class="section-body ${open?'':'collapsed'}" id="body-${id}">${body}</div>
-  </div>`;
-}
-
-function chartSection(id, title){
-  return `<div class="charts-row"><div class="chart-card" style="grid-column:1/-1">
-    <div class="chart-card-title">${title}</div>
-    <div class="chart-wrap"><canvas id="${id}"></canvas></div>
-  </div></div>`;
-}
-
-function toggleSection(id){
-  const body = document.getElementById('body-'+id);
-  const chev = document.getElementById('chev-'+id);
-  body.classList.toggle('collapsed');
-  chev.classList.toggle('open');
-}
-
-function setupSections(){}
-
-function renderCharts(rows, d){
+function sparkBars(rows,key,color){
   const byDay={};
-  rows.forEach(r=>{
-    const day = r.fecha.toISOString().split('T')[0];
-    if(!byDay[day]) byDay[day]={nuevo:0,oto:0,rev:0};
-    if(r.evento==='Nuevo') byDay[day].nuevo++;
-    if(r.evento==='OTO') byDay[day].oto++;
-    byDay[day].rev+=r.monto;
-  });
-  const days=Object.keys(byDay).sort();
-  const subsData=days.map(d=>byDay[d].nuevo);
-  let cum=0; const revData=days.map(d=>{cum+=byDay[d].rev;return+cum.toFixed(2);});
-  const otoData=days.map(d=>byDay[d].nuevo>0?+((byDay[d].oto/byDay[d].nuevo)*100).toFixed(1):0);
-
-  const BLUE='#2563EB'; const TEAL='#0D9488'; const AMBER='#D97706';
-
-  function mk(id,cfg){
-    if(charts[id]) charts[id].destroy();
-    const el=document.getElementById(id);
-    if(el) charts[id]=new Chart(el,cfg);
-  }
-
-  const baseOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:10,font:{size:10},color:'#A09D96'},grid:{display:false}},y:{ticks:{font:{size:10},color:'#A09D96'},grid:{color:'#F0EEE9'}}}};
-
-  mk('chart-subs-day',{type:'bar',data:{labels:days,datasets:[{data:subsData,backgroundColor:BLUE+'33',borderColor:BLUE,borderWidth:1.5,borderRadius:4}]},options:{...baseOpts,scales:{...baseOpts.scales,y:{...baseOpts.scales.y,ticks:{...baseOpts.scales.y.ticks,stepSize:1}}}}});
-  mk('chart-mrr-cum',{type:'line',data:{labels:days,datasets:[{data:revData,borderColor:TEAL,backgroundColor:TEAL+'22',fill:true,tension:0.4,pointRadius:0,borderWidth:2}]},options:{...baseOpts,scales:{...baseOpts.scales,y:{...baseOpts.scales.y,ticks:{...baseOpts.scales.y.ticks,callback:v=>'$'+v.toLocaleString('en-US')}}}}});
-  mk('chart-oto-rate',{type:'line',data:{labels:days,datasets:[{data:otoData,borderColor:AMBER,backgroundColor:AMBER+'22',fill:true,tension:0.4,pointRadius:0,borderWidth:2}]},options:{...baseOpts,scales:{...baseOpts.scales,y:{...baseOpts.scales.y,ticks:{...baseOpts.scales.y.ticks,callback:v=>v+'%'}}}}});
+  rows.forEach(r=>{const d=r.fecha.toISOString().split('T')[0];byDay[d]=(byDay[d]||0)+1;});
+  const vals=Object.values(byDay);
+  if(!vals.length)return'';
+  const max=Math.max(...vals)||1;
+  return vals.slice(-8).map(v=>`<div class="sp-bar" style="height:${Math.max(15,Math.round(v/max*100))}%;background:${color}"></div>`).join('');
 }
 
-document.querySelectorAll('.btn-range').forEach(btn=>{
-  btn.addEventListener('click', function(){ setRange(this.dataset.range); });
+function mkChart(id,cfg){
+  if(activeCharts[id])activeCharts[id].destroy();
+  const el=document.getElementById(id);
+  if(el)activeCharts[id]=new Chart(el,cfg);
+}
+
+function byDay(rows){
+  const d={};
+  rows.forEach(r=>{
+    const day=r.fecha.toISOString().split('T')[0];
+    if(!d[day])d[day]={nuevo:0,oto:0,upsell:0,cancel:0,rev:0};
+    if(r.evento==='Nuevo')d[day].nuevo++;
+    if(r.evento==='OTO')d[day].oto++;
+    if(r.evento==='Upsell')d[day].upsell++;
+    if(r.evento==='Cancelación')d[day].cancel++;
+    d[day].rev+=r.monto;
+  });
+  return d;
+}
+
+function renderSection(rows){
+  const d=calc(rows);
+  const bd=byDay(rows);
+  const days=Object.keys(bd).sort();
+  let cum=0;
+  const revCum=days.map(day=>{cum+=bd[day].rev;return+cum.toFixed(2);});
+  const P='#6C47FF',PL='#EEE9FF',B='#2563EB',BL='#EFF4FF',G='#16A34A',GL='#dcfce7',R='#DC2626',RL='#fee2e2',A='#D97706';
+  const baseOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:8,font:{size:10},color:'#A09DB8'},grid:{display:false}},y:{ticks:{font:{size:10},color:'#A09DB8'},grid:{color:'#F4F3F8',lineWidth:1}}}};
+
+  const sections={
+    subs:`
+      <div class="kpi-grid">
+        <div class="kpi-card purple"><div class="kpi-label">Suscripciones activas</div><div class="kpi-value">${fmtN(d.activas)}</div><div class="kpi-delta up">+${fmtN(d.nuevos.length)} nuevas</div><div class="spark">${sparkBars(d.nuevos,null,P)}</div></div>
+        <div class="kpi-card"><div class="kpi-label">Nuevas suscripciones</div><div class="kpi-value">${fmtN(d.nuevos.length)}</div><div class="kpi-delta">período actual</div><div class="spark">${sparkBars(d.nuevos,null,'#A09DB8')}</div></div>
+        <div class="kpi-card"><div class="kpi-label">Cancelaciones</div><div class="kpi-value">${fmtN(d.churnRows.length)}</div><div class="kpi-delta ${d.churnRows.length>0?'down':'up'}">${d.churnRows.length>0?'churn real':'sin cancelaciones'}</div></div>
+        <div class="kpi-card ${d.reembolsos.length>3?'red':''}"><div class="kpi-label">Reembolsos</div><div class="kpi-value">${fmtN(d.reembolsos.length)}</div><div class="kpi-delta ${d.reembolsos.length>0?'down':''}">${fmtPct(d.refundRate)} reembolso rate</div></div>
+        <div class="kpi-card blue"><div class="kpi-label">Upsells anuales</div><div class="kpi-value">${fmtN(d.upsells.length)}</div><div class="kpi-delta up">${fmtPct(d.upgradeRate)} upgrade rate</div></div>
+        <div class="kpi-card ${d.nrr>=1?'green':'amber'}"><div class="kpi-label">NRR</div><div class="kpi-value">${fmtPct(d.nrr)}</div><div class="kpi-delta ${d.nrr>=1?'up':''}">net revenue retention</div></div>
+      </div>
+      <div class="charts-grid">
+        <div class="chart-card"><div class="chart-card-title">Nuevas suscripciones por día</div><div class="chart-wrap" style="height:160px"><canvas id="ch1"></canvas></div></div>
+        <div class="chart-card"><div class="chart-card-title">Distribución de eventos</div><div class="chart-wrap" style="height:160px"><canvas id="ch2"></canvas></div></div>
+      </div>`,
+    mrr:`
+      <div class="kpi-grid">
+        <div class="kpi-card green"><div class="kpi-label">New MRR</div><div class="kpi-value">${fmt$(d.newMrr)}</div><div class="kpi-delta up">ingresos nuevos netos</div></div>
+        <div class="kpi-card blue"><div class="kpi-label">Expansion MRR</div><div class="kpi-value">${fmt$(d.expMrr)}</div><div class="kpi-delta ${d.expMrr>=0?'up':'down'}">upsells anuales</div></div>
+        <div class="kpi-card ${d.churnMrr>0?'red':''}"><div class="kpi-label">Churned MRR</div><div class="kpi-value">${fmt$(d.churnMrr)}</div><div class="kpi-delta ${d.churnMrr>0?'down':''}">${d.churnMrr===0?'sin pérdidas':'MRR perdido'}</div></div>
+        <div class="kpi-card purple"><div class="kpi-label">Net New MRR</div><div class="kpi-value">${fmt$(d.netMrr)}</div><div class="kpi-delta up">crecimiento neto</div></div>
+        <div class="kpi-card"><div class="kpi-label">Ending MRR</div><div class="kpi-value">${fmt$(d.newMrr+d.expMrr)}</div><div class="kpi-delta">MRR del período</div></div>
+        <div class="kpi-card blue"><div class="kpi-label">ARR</div><div class="kpi-value">${fmt$(d.arr)}</div><div class="kpi-delta">anualización del MRR</div></div>
+      </div>
+      <div class="charts-grid full">
+        <div class="chart-card"><div class="chart-card-title">Ingreso acumulado en el período</div><div class="chart-wrap" style="height:180px"><canvas id="ch3"></canvas></div></div>
+      </div>`,
+    ret:`
+      <div class="kpi-grid">
+        <div class="kpi-card ${d.churnRate>0.1?'red':d.churnRate>0.05?'amber':'green'}"><div class="kpi-label">Churn Rate</div><div class="kpi-value">${fmtPct(d.churnRate)}</div><div class="kpi-delta ${d.churnRate===0?'up':d.churnRate<0.05?'up':'down'}">${d.churnRate===0?'sin cancelaciones':d.churnRate<0.05?'bajo — excelente':'revisar causas'}</div></div>
+        <div class="kpi-card ${d.refundRate>0.05?'red':''}"><div class="kpi-label">Reembolso Rate</div><div class="kpi-value">${fmtPct(d.refundRate)}</div><div class="kpi-delta ${d.refundRate<0.03?'up':'down'}">${d.refundRate<0.03?'saludable':'alto — revisar'}</div></div>
+        <div class="kpi-card blue"><div class="kpi-label">Annual Upgrade Rate</div><div class="kpi-value">${fmtPct(d.upgradeRate)}</div><div class="kpi-delta up">conversión a anual</div></div>
+        <div class="kpi-card ${d.nrr>=1?'green':'amber'}"><div class="kpi-label">Net Revenue Retention</div><div class="kpi-value">${fmtPct(d.nrr)}</div><div class="kpi-delta ${d.nrr>=1?'up':'down'}">${d.nrr>=1?'base crece sola':'expansión < churn'}</div></div>
+      </div>`,
+    cro:`
+      <div class="kpi-grid">
+        <div class="kpi-card purple"><div class="kpi-label">Compras OTO</div><div class="kpi-value">${fmtN(d.otoCount)}</div><div class="kpi-delta up">total del período</div><div class="spark">${sparkBars(d.otos,null,P)}</div></div>
+        <div class="kpi-card ${d.otoRate>0.3?'green':'blue'}"><div class="kpi-label">OTO Attach Rate</div><div class="kpi-value">${fmtPct(d.otoRate)}</div><div class="kpi-delta up">${d.otoRate>0.3?'excelente conversión':'en crecimiento'}</div></div>
+        <div class="kpi-card"><div class="kpi-label">AOV OTO</div><div class="kpi-value">${fmt$(d.aovOto)}</div><div class="kpi-delta">ticket promedio OTO</div></div>
+        <div class="kpi-card green"><div class="kpi-label">Ingreso OTO</div><div class="kpi-value">${fmt$(d.otoRev)}</div><div class="kpi-delta up">ingreso adicional total</div></div>
+      </div>
+      <div class="charts-grid full">
+        <div class="chart-card"><div class="chart-card-title">OTO attach rate por día</div><div class="chart-wrap" style="height:160px"><canvas id="ch4"></canvas></div></div>
+      </div>`,
+    ing:`
+      <div class="kpi-grid">
+        <div class="kpi-card green"><div class="kpi-label">Ingreso por suscripciones</div><div class="kpi-value">${fmt$(d.revSub)}</div><div class="kpi-delta up">MRR + expansión</div></div>
+        <div class="kpi-card blue"><div class="kpi-label">Ingreso OTO</div><div class="kpi-value">${fmt$(d.otoRev)}</div><div class="kpi-delta up">cursos vendidos</div></div>
+        <div class="kpi-card purple"><div class="kpi-label">Ingreso total</div><div class="kpi-value">${fmt$(d.revTotal)}</div><div class="kpi-delta up">suma del período</div></div>
+        <div class="kpi-card"><div class="kpi-label">ARR</div><div class="kpi-value">${fmt$(d.arr)}</div><div class="kpi-delta">proyección anual</div></div>
+      </div>
+      <div class="charts-grid full">
+        <div class="chart-card"><div class="chart-card-title">Ingreso acumulado</div><div class="chart-wrap" style="height:180px"><canvas id="ch5"></canvas></div></div>
+      </div>`,
+    unit:`
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-label">ARPU Total</div><div class="kpi-value">${fmt$(d.arpuTotal)}</div><div class="kpi-delta">ingreso promedio por usuario</div></div>
+        <div class="kpi-card"><div class="kpi-label">ARPU Mensual</div><div class="kpi-value">${fmt$(d.arpuM)}</div><div class="kpi-delta">plan mensual</div></div>
+        <div class="kpi-card"><div class="kpi-label">ARPU Anual</div><div class="kpi-value">${fmt$(d.arpuA)}</div><div class="kpi-delta">plan anual (MRR equiv.)</div></div>
+        <div class="kpi-card purple"><div class="kpi-label">LTV</div><div class="kpi-value">${fmt$(d.ltv)}</div><div class="kpi-delta">${d.churnRate===0?'estimado 5% churn':'basado en churn real'}</div></div>
+        <div class="kpi-card"><div class="kpi-label">CAC</div><div class="kpi-value">${fmt$(d.cac)}</div><div class="kpi-delta">ingreso manual</div></div>
+        <div class="kpi-card ${d.ltvCac>3?'green':'amber'}"><div class="kpi-label">LTV:CAC</div><div class="kpi-value">${d.ltvCac.toFixed(1)}x</div><div class="kpi-delta up">${d.ltvCac>5?'excelente':d.ltvCac>3?'saludable':'mejorar'}</div></div>
+        <div class="kpi-card ${d.payback<3?'green':'amber'}"><div class="kpi-label">Payback Period</div><div class="kpi-value">${d.payback.toFixed(1)}</div><div class="kpi-delta up">meses para recuperar CAC</div></div>
+      </div>`
+  };
+
+  document.getElementById('content').innerHTML=sections[currentSection]||'';
+
+  setTimeout(()=>{
+    const otoRateData=days.map(day=>{const n=bd[day].nuevo;const o=bd[day].oto;return n>0?+((o/n)*100).toFixed(1):0;});
+    if(currentSection==='subs'){
+      mkChart('ch1',{type:'bar',data:{labels:days,datasets:[{data:days.map(d=>bd[d].nuevo),backgroundColor:P+'44',borderColor:P,borderWidth:1.5,borderRadius:4}]},options:{...baseOpts,scales:{...baseOpts.scales,y:{...baseOpts.scales.y,ticks:{...baseOpts.scales.y.ticks,stepSize:1}}}}});
+      const evC={Nuevos:d.nuevos.length,OTOs:d.otoCount,Upsells:d.upsells.length,Cancelaciones:d.churnRows.length+d.reembolsos.length};
+      mkChart('ch2',{type:'doughnut',data:{labels:Object.keys(evC),datasets:[{data:Object.values(evC),backgroundColor:[P,B,G,R],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},padding:10,color:'#6B6880'}}}}});
+    }
+    if(currentSection==='mrr'){
+      mkChart('ch3',{type:'line',data:{labels:days,datasets:[{data:revCum,borderColor:P,backgroundColor:P+'18',fill:true,tension:0.4,pointRadius:0,borderWidth:2}]},options:{...baseOpts,scales:{...baseOpts.scales,y:{...baseOpts.scales.y,ticks:{...baseOpts.scales.y.ticks,callback:v=>'$'+v.toLocaleString('en-US')}}}}});
+    }
+    if(currentSection==='cro'){
+      mkChart('ch4',{type:'line',data:{labels:days,datasets:[{data:otoRateData,borderColor:P,backgroundColor:P+'18',fill:true,tension:0.4,pointRadius:0,borderWidth:2}]},options:{...baseOpts,scales:{...baseOpts.scales,y:{...baseOpts.scales.y,ticks:{...baseOpts.scales.y.ticks,callback:v=>v+'%'}}}}});
+    }
+    if(currentSection==='ing'){
+      mkChart('ch5',{type:'line',data:{labels:days,datasets:[{data:revCum,borderColor:G,backgroundColor:G+'18',fill:true,tension:0.4,pointRadius:0,borderWidth:2}]},options:{...baseOpts,scales:{...baseOpts.scales,y:{...baseOpts.scales.y,ticks:{...baseOpts.scales.y.ticks,callback:v=>'$'+v.toLocaleString('en-US')}}}}});
+    }
+  },50);
+}
+
+document.getElementById('sidebar').addEventListener('mouseenter',()=>{
+  document.getElementById('sb-sub').style.opacity='1';
+});
+document.getElementById('sidebar').addEventListener('mouseleave',()=>{
+  document.getElementById('sb-sub').style.opacity='0';
 });
 
 loadData();
 </script>
 </body>
 </html>
-
